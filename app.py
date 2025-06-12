@@ -1,8 +1,9 @@
 import os
+import re
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import re
 from dotenv import load_dotenv
+from models import db, Topic, Suggestion
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 
@@ -11,6 +12,19 @@ frontend_url = os.environ.get("FRONTEND_URL")
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": frontend_url}})
+
+basedir = os.path.abspath(os.path.dirname(__file__))
+database = os.environ.get("DATABASE")
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(app.instance_path, database)}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
+
+db.init_app(app)
+
+with app.app_context():
+    db.drop_all()
+    db.create_all()
+
 
 @app.route('/api/data-gmaps', methods=['GET'])
 def dataGmaps():
@@ -247,6 +261,59 @@ def wordCloud(type):
         "word_freq_neg": word_freq_neg.to_dict(orient='records'),
     })
 
+
+@app.route("/api/topics", methods=["GET"])
+def get_grouped_suggestions():
+    type_filter = request.args.get("type")
+    if not type_filter:
+        return jsonify({"error": "Parameter 'type' wajib diisi"}), 400
+
+    positif_topics = Topic.query.filter_by(topic_type=type_filter.upper(), sentiment="positif").all()
+    negatif_topics = Topic.query.filter_by(topic_type=type_filter.upper(), sentiment="negatif").all()
+
+    def serialize_grouped_suggestions(topics):
+        result = []
+        for topic in topics:
+            result.append({
+                "topic": topic.title,
+                "suggestions": [
+                    {
+                        "id": s.id,
+                        "content": s.content,
+                        "created_at": s.created_at.isoformat(),
+                        "updated_at": s.updated_at.isoformat()
+                    }
+                    for s in topic.suggestions
+                ]
+            })
+        return result
+
+    return jsonify({
+        "typeTopic": type_filter.upper(),
+        "positive": serialize_grouped_suggestions(positif_topics),
+        "negative": serialize_grouped_suggestions(negatif_topics)
+    })
+
+@app.route("/api/suggestions/bulk-update", methods=["PUT"])
+def bulk_update_suggestions():
+    data = request.get_json()
+
+    if not isinstance(data, list):
+        return jsonify({"error": "Data harus berupa list"}), 400
+
+    for item in data:
+        suggestion_id = item.get("id")
+        content = item.get("content")
+
+        if not suggestion_id or not content:
+            continue
+
+        suggestion = Suggestion.query.get(suggestion_id)
+        if suggestion:
+            suggestion.content = content
+
+    db.session.commit()
+    return jsonify({"message": "Suggestions updated"}), 200
 
 
 if __name__ == '__main__':
