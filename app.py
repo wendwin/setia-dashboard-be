@@ -206,11 +206,19 @@ def sentimentAnalysisReview():
         # "count_prediction_negatif": count_prediction_negatif
     })
 
-@app.route('/api/sentiment-analysis/word-cloud/type-a', methods=['GET'])
-def wordCloudA():
+@app.route('/api/sentiment-analysis/word-cloud/<type>', methods=['GET'])
+def wordCloud(type):
     data =  pd.read_csv('./static/data/data_topic_rs_3.csv')
     sentiment = data[['rating', 'type_rs','stemmed_text_done', 'location', 'label', 'predicted_sentiment']]
-    sentiment = sentiment[sentiment['type_rs'] == 'A']
+
+    if type == 'type-a':
+        sentiment = sentiment[sentiment['type_rs'] == 'A']
+    elif type == 'type-b':
+        sentiment = sentiment[sentiment['type_rs'] == 'B']
+    elif type == 'type-c':
+        sentiment = sentiment[sentiment['type_rs'] == 'C']
+    else:
+        sentiment = sentiment[sentiment['type_rs'] == 'D']    
 
     sentiment['predicted_sentiment'] = sentiment['predicted_sentiment'].replace({1: 'Positif', -1: 'Negatif'})
 
@@ -219,128 +227,25 @@ def wordCloudA():
     negative_reviews = sentiment[sentiment['predicted_sentiment'] == 'Negatif']
 
     # Membuat model CountVectorizer untuk Positif
-    vectorizer_pos = CountVectorizer(stop_words='english', max_features=25)
+    vectorizer_pos = CountVectorizer(stop_words='english', max_features=50)
     X_pos = vectorizer_pos.fit_transform(positive_reviews['stemmed_text_done'])
     words_pos = vectorizer_pos.get_feature_names_out()
     frequencies_pos = X_pos.sum(axis=0).A1
     word_freq_pos = pd.DataFrame(list(zip(words_pos, frequencies_pos)), columns=['Word', 'Frequency'])
-    word_freq_pos = word_freq_pos.sort_values(by='Frequency', ascending=False).head(25)
+    word_freq_pos = word_freq_pos.sort_values(by='Frequency', ascending=False).head(50)
 
     # Membuat model CountVectorizer untuk Negatif
-    vectorizer_neg = CountVectorizer(stop_words='english', max_features=25)
+    vectorizer_neg = CountVectorizer(stop_words='english', max_features=50)
     X_neg = vectorizer_neg.fit_transform(negative_reviews['stemmed_text_done'])
     words_neg = vectorizer_neg.get_feature_names_out()
     frequencies_neg = X_neg.sum(axis=0).A1
     word_freq_neg = pd.DataFrame(list(zip(words_neg, frequencies_neg)), columns=['Word', 'Frequency'])
-    word_freq_neg = word_freq_neg.sort_values(by='Frequency', ascending=False).head(25)
+    word_freq_neg = word_freq_neg.sort_values(by='Frequency', ascending=False).head(50)
 
     return jsonify({
-
         "word_freq_pos": word_freq_pos.to_dict(orient='records'),
         "word_freq_neg": word_freq_neg.to_dict(orient='records'),
     })
-
-@app.route('/api/sentiment-analysis/word-cloud/type-b', methods=['GET'])
-def wordCloudB():
-    data =  pd.read_csv('./static/data/data_topic_rs_3.csv')
-    sentiment = data[['rating', 'type_rs','stemmed_text_done', 'location', 'label', 'predicted_sentiment']]
-    sentiment = sentiment[sentiment['type_rs'] == 'B']
-
-    sentiment['predicted_sentiment'] = sentiment['predicted_sentiment'].replace({1: 'Positif', -1: 'Negatif'})
-
-    # Pisahkan ulasan berdasarkan label Positif dan Negatif
-    positive_reviews = sentiment[sentiment['predicted_sentiment'] == 'Positif']
-    negative_reviews = sentiment[sentiment['predicted_sentiment'] == 'Negatif']
-
-    # Membuat model CountVectorizer untuk Positif
-    vectorizer_pos = CountVectorizer(stop_words='english', max_features=25)
-    X_pos = vectorizer_pos.fit_transform(positive_reviews['stemmed_text_done'])
-    words_pos = vectorizer_pos.get_feature_names_out()
-    frequencies_pos = X_pos.sum(axis=0).A1
-    word_freq_pos = pd.DataFrame(list(zip(words_pos, frequencies_pos)), columns=['Word', 'Frequency'])
-    word_freq_pos = word_freq_pos.sort_values(by='Frequency', ascending=False).head(25)
-
-    # Membuat model CountVectorizer untuk Negatif
-    vectorizer_neg = CountVectorizer(stop_words='english', max_features=25)
-    X_neg = vectorizer_neg.fit_transform(negative_reviews['stemmed_text_done'])
-    words_neg = vectorizer_neg.get_feature_names_out()
-    frequencies_neg = X_neg.sum(axis=0).A1
-    word_freq_neg = pd.DataFrame(list(zip(words_neg, frequencies_neg)), columns=['Word', 'Frequency'])
-    word_freq_neg = word_freq_neg.sort_values(by='Frequency', ascending=False).head(25)
-
-    return jsonify({
-
-        "word_freq_pos": word_freq_pos.to_dict(orient='records'),
-        "word_freq_neg": word_freq_neg.to_dict(orient='records'),
-    })
-
-@app.route('/api/sentiment-analysis/word-cloud/type-c', methods=['GET'])
-def wordCloudC():
-    data =  pd.read_csv('./static/data/data_topic_rs_3.csv')
-    sentiment = data[['rating', 'type_rs','stemmed_text_done', 'location', 'label', 'predicted_sentiment']]
-    sentiment = sentiment[sentiment['type_rs'] == 'C']
-
-    sentiment['predicted_sentiment'] = sentiment['predicted_sentiment'].replace({1: 'Positif', -1: 'Negatif'})
-
-    # Pisahkan ulasan berdasarkan label Positif dan Negatif
-    positive_reviews = sentiment[sentiment['predicted_sentiment'] == 'Positif']
-    negative_reviews = sentiment[sentiment['predicted_sentiment'] == 'Negatif']
-
-    # Membuat model CountVectorizer untuk Positif
-    vectorizer_pos = CountVectorizer(stop_words='english', max_features=25)
-    X_pos = vectorizer_pos.fit_transform(positive_reviews['stemmed_text_done'])
-    words_pos = vectorizer_pos.get_feature_names_out()
-    frequencies_pos = X_pos.sum(axis=0).A1
-    word_freq_pos = pd.DataFrame(list(zip(words_pos, frequencies_pos)), columns=['Word', 'Frequency'])
-    word_freq_pos = word_freq_pos.sort_values(by='Frequency', ascending=False).head(25)
-
-    # Membuat model CountVectorizer untuk Negatif
-    vectorizer_neg = CountVectorizer(stop_words='english', max_features=25)
-    X_neg = vectorizer_neg.fit_transform(negative_reviews['stemmed_text_done'])
-    words_neg = vectorizer_neg.get_feature_names_out()
-    frequencies_neg = X_neg.sum(axis=0).A1
-    word_freq_neg = pd.DataFrame(list(zip(words_neg, frequencies_neg)), columns=['Word', 'Frequency'])
-    word_freq_neg = word_freq_neg.sort_values(by='Frequency', ascending=False).head(25)
-
-    return jsonify({
-
-        "word_freq_pos": word_freq_pos.to_dict(orient='records'),
-        "word_freq_neg": word_freq_neg.to_dict(orient='records'),
-    })
-@app.route('/api/sentiment-analysis/word-cloud/type-d', methods=['GET'])
-def wordCloudD():
-    data =  pd.read_csv('./static/data/data_topic_rs_3.csv')
-    sentiment = data[['rating', 'type_rs','stemmed_text_done', 'location', 'label', 'predicted_sentiment']]
-    sentiment = sentiment[sentiment['type_rs'] == 'D']
-
-    sentiment['predicted_sentiment'] = sentiment['predicted_sentiment'].replace({1: 'Positif', -1: 'Negatif'})
-
-    # Pisahkan ulasan berdasarkan label Positif dan Negatif
-    positive_reviews = sentiment[sentiment['predicted_sentiment'] == 'Positif']
-    negative_reviews = sentiment[sentiment['predicted_sentiment'] == 'Negatif']
-
-    # Membuat model CountVectorizer untuk Positif
-    vectorizer_pos = CountVectorizer(stop_words='english', max_features=25)
-    X_pos = vectorizer_pos.fit_transform(positive_reviews['stemmed_text_done'])
-    words_pos = vectorizer_pos.get_feature_names_out()
-    frequencies_pos = X_pos.sum(axis=0).A1
-    word_freq_pos = pd.DataFrame(list(zip(words_pos, frequencies_pos)), columns=['Word', 'Frequency'])
-    word_freq_pos = word_freq_pos.sort_values(by='Frequency', ascending=False).head(25)
-
-    # Membuat model CountVectorizer untuk Negatif
-    vectorizer_neg = CountVectorizer(stop_words='english', max_features=25)
-    X_neg = vectorizer_neg.fit_transform(negative_reviews['stemmed_text_done'])
-    words_neg = vectorizer_neg.get_feature_names_out()
-    frequencies_neg = X_neg.sum(axis=0).A1
-    word_freq_neg = pd.DataFrame(list(zip(words_neg, frequencies_neg)), columns=['Word', 'Frequency'])
-    word_freq_neg = word_freq_neg.sort_values(by='Frequency', ascending=False).head(25)
-
-    return jsonify({
-
-        "word_freq_pos": word_freq_pos.to_dict(orient='records'),
-        "word_freq_neg": word_freq_neg.to_dict(orient='records'),
-    })
-
 
 
 
