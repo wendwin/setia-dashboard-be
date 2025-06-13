@@ -27,6 +27,10 @@ db.init_app(app)
 #     db.create_all()
 
 
+@app.route('/')
+def index():
+    return 'App running!'
+
 @app.route('/api/data-gmaps', methods=['GET'])
 def dataGmaps():
     data_all = pd.read_csv('./static/data/df_gmaps_reviews.csv')
