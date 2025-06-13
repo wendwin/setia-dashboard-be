@@ -24,7 +24,6 @@ app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 db.init_app(app)
 
 # with app.app_context():
-#     db.drop_all()
 #     db.create_all()
 
 
@@ -319,4 +318,6 @@ def bulk_update_suggestions():
 
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)
