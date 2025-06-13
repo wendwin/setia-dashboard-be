@@ -3,6 +3,7 @@ import re
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
+from flask_sqlalchemy import SQLAlchemy
 from models import db, Topic, Suggestion
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
@@ -15,15 +16,16 @@ CORS(app, resources={r"/api/*": {"origins": frontend_url}})
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 database = os.environ.get("DATABASE")
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(app.instance_path, database)}"
+# app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(app.instance_path, database)}"
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 
 db.init_app(app)
 
-with app.app_context():
-    db.drop_all()
-    db.create_all()
+# with app.app_context():
+#     db.drop_all()
+#     db.create_all()
 
 
 @app.route('/api/data-gmaps', methods=['GET'])
