@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
-from models import db, Topic, Suggestion
+from models import db, Topic, Suggestion, Summary
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 
@@ -273,8 +273,9 @@ def get_grouped_suggestions():
     if not type_filter:
         return jsonify({"error": "Parameter 'type' wajib diisi"}), 400
 
-    positif_topics = Topic.query.filter_by(topic_type=type_filter.upper(), sentiment="positif").all()
-    negatif_topics = Topic.query.filter_by(topic_type=type_filter.upper(), sentiment="negatif").all()
+    type_upper = type_filter.upper()
+    positif_topics = Topic.query.filter_by(topic_type=type_upper, sentiment="positif").all()
+    negatif_topics = Topic.query.filter_by(topic_type=type_upper, sentiment="negatif").all()
 
     def serialize_grouped_suggestions(topics):
         result = []
@@ -294,10 +295,41 @@ def get_grouped_suggestions():
         return result
 
     return jsonify({
-        "typeTopic": type_filter.upper(),
+        "typeTopic": type_upper,
         "positive": serialize_grouped_suggestions(positif_topics),
         "negative": serialize_grouped_suggestions(negatif_topics)
     })
+
+@app.route("/api/summary", methods=["GET"])
+def get_summary_by_type():
+    type_filter = request.args.get("type")
+    if not type_filter:
+        return jsonify({"error": "Parameter 'type' wajib diisi"}), 400
+
+    type_upper = type_filter.upper()
+
+    summary_pos = Summary.query.filter_by(type_name=type_upper, sentiment="positif").first()
+    summary_neg = Summary.query.filter_by(type_name=type_upper, sentiment="negatif").first()
+
+    result = {
+        "summary": {
+            "positive": {
+                "id": summary_pos.id if summary_pos else None,
+                "type_name": summary_pos.type_name if summary_pos else type_upper,
+                "sentiment": "positif",
+                "content": summary_pos.content if summary_pos else None
+            },
+            "negative": {
+                "id": summary_neg.id if summary_neg else None,
+                "type_name": summary_neg.type_name if summary_neg else type_upper,
+                "sentiment": "negatif",
+                "content": summary_neg.content if summary_neg else None
+            }
+        }
+    }
+
+    return jsonify(result)
+
 
 @app.route("/api/suggestions/bulk-update", methods=["PUT"])
 def bulk_update_suggestions():
@@ -319,6 +351,27 @@ def bulk_update_suggestions():
 
     db.session.commit()
     return jsonify({"message": "Suggestions updated"}), 200
+
+@app.route("/api/summaries/bulk-update", methods=["PUT"])
+def bulk_update_summary():
+    data = request.get_json()
+
+    if not isinstance(data, list):
+        return jsonify({"error": "Data harus berupa list"}), 400
+
+    for item in data:
+        summary_id = item.get("id")
+        content = item.get("content")
+
+        if not summary_id or content is None:
+            continue
+
+        summary = Summary.query.get(summary_id)
+        if summary:
+            summary.content = content
+
+    db.session.commit()
+    return jsonify({"message": "Summary updated successfully."}), 200
 
 
 if __name__ == '__main__':
