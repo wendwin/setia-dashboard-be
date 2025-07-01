@@ -33,7 +33,7 @@ def index():
 
 @app.route('/api/data-gmaps', methods=['GET'])
 def dataGmaps():
-    data_all = pd.read_csv('./static/data/df_gmaps_reviews.csv')
+    data_all = pd.read_csv('./static/data/df_gmaps_reviews2.csv')
     reviews = data_all[['name', 'review', 'rating', 'location', 'type_rs']]
 
     count_reviews = len(reviews)
@@ -97,7 +97,7 @@ def dataGmapsPreprocessing(step):
         text = re.sub(r'-', ' ', step)
         return text.title()
 
-    data_all = pd.read_csv('./static/data/data_topic_rs_3.csv')
+    data_all = pd.read_csv('./static/data/data_topik_rs_4.csv')
     if step == 'case-folding':
         reviews = data_all[['casefold_text', 'rating', 'location', 'type_rs']]
     elif step == 'data-cleaning':
@@ -166,7 +166,7 @@ def dataGmapsPreprocessing(step):
 
 @app.route('/api/sentiment-analysis', methods=['GET'])
 def sentimentAnalysisReview():
-    data =  pd.read_csv('./static/data/data_topic_rs_3.csv')
+    data =  pd.read_csv('./static/data/data_topik_rs_4.csv')
     sentiment = data[['rating', 'type_rs','stemmed_text_done', 'location', 'label', 'predicted_sentiment']]
 
     count_reviews = len(sentiment)
@@ -227,7 +227,7 @@ def sentimentAnalysisReview():
 
 @app.route('/api/sentiment-analysis/word-cloud/<type>', methods=['GET'])
 def wordCloud(type):
-    data =  pd.read_csv('./static/data/data_topic_rs_3.csv')
+    data =  pd.read_csv('./static/data/data_topik_rs_4.csv')
     sentiment = data[['rating', 'type_rs','stemmed_text_done', 'location', 'label', 'predicted_sentiment']]
 
     if type == 'type-a':
