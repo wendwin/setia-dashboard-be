@@ -4,7 +4,9 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
-from models import db, Topic, Suggestion, Summary
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from werkzeug.security import check_password_hash
+from models import db, Topic, Suggestion, Summary, User
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 
@@ -20,12 +22,28 @@ database = os.environ.get("DATABASE")
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
+jwt = JWTManager(app)
 
 db.init_app(app)
 
 # with app.app_context():
 #     db.create_all()
 
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    email = request.json.get('email')
+    password = request.json.get('password')
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"msg": "User tidak ditemukan"}), 404
+
+    if check_password_hash(user.password, password):
+        access_token = create_access_token(identity=user.email)
+        return jsonify(access_token=access_token)
+    return jsonify({"msg": "Email atau password salah"}), 401
 
 @app.route('/')
 def index():
@@ -332,6 +350,7 @@ def get_summary_by_type():
 
 
 @app.route("/api/suggestions/bulk-update", methods=["PUT"])
+@jwt_required() 
 def bulk_update_suggestions():
     data = request.get_json()
 
@@ -353,6 +372,7 @@ def bulk_update_suggestions():
     return jsonify({"message": "Suggestions updated"}), 200
 
 @app.route("/api/summaries/bulk-update", methods=["PUT"])
+@jwt_required() 
 def bulk_update_summary():
     data = request.get_json()
 
