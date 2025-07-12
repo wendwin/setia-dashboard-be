@@ -1,7 +1,8 @@
 from app import app
-from models import db, Topic, Suggestion
+from models import db, Topic, Suggestion, User
 from collections import defaultdict
 from random import sample
+from werkzeug.security import generate_password_hash
 
 # with app.app_context():
 #     db.drop_all()
@@ -117,10 +118,10 @@ with app.app_context():
 
     # Buat Topic berdasarkan tipe dan sentimen
     topic_data = [
-        ('A', 'positif', 3), ('A', 'negatif', 3),
-        ('B', 'positif', 3), ('B', 'negatif', 3),
-        ('C', 'positif', 4), ('C', 'negatif', 2),
-        ('D', 'positif', 7), ('D', 'negatif', 2)
+        ('A', 'positif', 3), ('A', 'negatif', 6),
+        ('B', 'positif', 5), ('B', 'negatif', 5),
+        ('C', 'positif', 5), ('C', 'negatif', 3),
+        ('D', 'positif', 3), ('D', 'negatif', 3)
     ]
 
     topics = []
@@ -167,6 +168,15 @@ with app.app_context():
         summaries.append(Summary(type_name=type_name, sentiment='negatif', content=f"Ringkasan negatif untuk tipe {type_name}"))
 
     db.session.add_all(summaries)
-
     db.session.commit()
+
+    admin = User(
+        username='admin',
+        email='admin@gmail.com',
+        password=generate_password_hash('admin123'),
+    )
+
+    db.session.add(admin)
+    db.session.commit()
+
     print("Seeding selesai.")
