@@ -1,8 +1,4 @@
-from app import app
-from models import db, Topic, Suggestion, User
-from collections import defaultdict
-from random import sample
-from werkzeug.security import generate_password_hash
+
 
 # with app.app_context():
 #     db.drop_all()
@@ -98,25 +94,33 @@ from werkzeug.security import generate_password_hash
     # print("Seeding selesai.")
 
 
-from app import db
-from models import TypeTopic, Topic, Suggestion, Summary  # sesuaikan dengan struktur proyekmu
 from datetime import datetime
 from random import sample
+from collections import defaultdict
+from dotenv import load_dotenv
+import os
+
+from werkzeug.security import generate_password_hash
+
+from app import db, app
+from models import db, TypeTopic, Topic, Suggestion, Summary, User
+
+load_dotenv()
 
 with app.app_context():
     db.drop_all()
     db.create_all()
 
-    # Tambahkan 4 TypeTopic: A, B, C, D
+    # 4 TypeTopic: A, B, C, D
     type_a = TypeTopic(name='A')
     type_b = TypeTopic(name='B')
     type_c = TypeTopic(name='C')
     type_d = TypeTopic(name='D')
 
     db.session.add_all([type_a, type_b, type_c, type_d])
-    db.session.commit()  # commit dulu agar FK ke name bisa digunakan
+    db.session.commit() 
 
-    # Buat Topic berdasarkan tipe dan sentimen
+    # Topic berdasarkan tipe dan sentimen
     topic_data = [
         ('A', 'positif', 3), ('A', 'negatif', 6),
         ('B', 'positif', 5), ('B', 'negatif', 5),
@@ -132,7 +136,6 @@ with app.app_context():
     db.session.add_all(topics)
     db.session.commit()
 
-    # Lorem isi
     lorem_contents = [
         "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna.",
         "Ut enim ad minim veniam quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat dolore.",
@@ -161,7 +164,7 @@ with app.app_context():
 
     db.session.add_all(suggestions)
 
-    # Tambahkan Summary (2 per type: positif & negatif)
+    # Summary (2 per type: positif & negatif)
     summaries = []
     for type_name in ['A', 'B', 'C', 'D']:
         summaries.append(Summary(type_name=type_name, sentiment='positif', content=f"Ringkasan positif untuk tipe {type_name}"))
@@ -171,9 +174,9 @@ with app.app_context():
     db.session.commit()
 
     admin = User(
-        username='admin',
-        email='admin@gmail.com',
-        password=generate_password_hash('admin123'),
+        username=os.getenv("ADMIN_USERNAME", "admin"),
+        email=os.getenv("ADMIN_EMAIL", "admin@example.com"),
+        password=generate_password_hash(os.environ["ADMIN_PASSWORD"]),
     )
 
     db.session.add(admin)
