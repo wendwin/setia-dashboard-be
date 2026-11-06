@@ -18,15 +18,16 @@ frontend_url = os.environ.get("FRONTEND_URL")
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": frontend_url}})
 
-basedir = os.path.abspath(os.path.dirname(__file__))
-database = os.environ.get("DATABASE")
-# app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(app.instance_path, database)}"
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
-jwt = JWTManager(app)
+database_url = os.environ.get('DATABASE_URL')
 
+if database_url and database_url.startswith('mysql://'):
+    database_url = database_url.replace('mysql://', 'mysql+pymysql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
+
+jwt = JWTManager(app)
 db.init_app(app)
 
 # with app.app_context():
