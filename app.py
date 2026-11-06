@@ -5,7 +5,9 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from datetime import timedelta
 from werkzeug.security import check_password_hash
+from marshmallow import Schema, fields, ValidationError
 from models import db, Topic, Suggestion, Summary, User
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
@@ -30,20 +32,37 @@ db.init_app(app)
 # with app.app_context():
 #     db.create_all()
 
+class LoginSchema(Schema):
+    email = fields.Email(required=True)
+    password = fields.Str(required=True, validate=lambda p: len(p) >= 6)
+
+login_schema = LoginSchema()
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    email = request.json.get('email')
-    password = request.json.get('password')
+    try:
+        data = login_schema.load(request.json)
+    except ValidationError as err:
+        return jsonify(err.messages), 400
+
+    email = data['email']
+    password = data['password']
+
+    if not email or not password:
+        return jsonify({"msg": "Email atau password salah"}), 400
 
     user = User.query.filter_by(email=email).first()
-    if not user:
-        return jsonify({"msg": "User tidak ditemukan"}), 404
+    if not user or not check_password_hash(user.password, password):
+        return jsonify({"msg": "Email atau password salah"}), 401
 
-    if check_password_hash(user.password, password):
-        access_token = create_access_token(identity=user.email)
-        return jsonify(access_token=access_token)
-    return jsonify({"msg": "Email atau password salah"}), 401
+    access_token = create_access_token(identity=user.email, expires_delta=timedelta(hours=1))
+    return jsonify(access_token=access_token)
+
+@app.route('/api/protected', methods=['GET'])
+@jwt_required()
+def protected():
+    current_user = get_jwt_identity()
+    return jsonify(logged_in_as=current_user), 200
 
 @app.route('/')
 def index():
